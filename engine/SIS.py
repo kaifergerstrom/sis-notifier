@@ -13,8 +13,16 @@ class SIS:
 	json_path = "gradebook.json"
 
 
-	def __init__(self):
-		pass
+	def __init__(self, username, password):
+		"""Constructor for SIS viewer, stores global username and password variable
+
+		:param username: username for SIS login
+		:param password: password for SIS login
+
+		:returns: void
+		"""
+		self.username = username
+		self.password = password
 
 	
 	def __save_dict_as_json(self, data, filename):
@@ -29,13 +37,13 @@ class SIS:
 			json.dump(data, outfile)
 
 
-	def update_grades(self, username, password):
+	def update_grades(self):
 		"""Detects new additions to the assignments tab in SIS and updates JSON file
 
 		:returns: list of new additions to the list
 		"""
 
-		curr_soup = self.__get_gradebook_from_sis(username, password)
+		curr_soup = self.__get_gradebook_from_sis()
 
 		additions = []  # Final return list
 
@@ -73,11 +81,8 @@ class SIS:
 		return False
 
 
-	def __get_gradebook_from_sis(self, username, password):
+	def __get_gradebook_from_sis(self):
 		"""Creates session to webscrap aspx SIS gradebook
-
-		:param username: username for SIS login
-		:param password: password for SIS login
 
 		:returns: bs4 object for raw html of gradebook page
 		"""
@@ -88,8 +93,8 @@ class SIS:
 
 			# Prepare the data to post to the login form (apsx)
 			data = {}
-			data['ctl00$MainContent$username'] = username
-			data['ctl00$MainContent$password'] = password
+			data['ctl00$MainContent$username'] = self.username
+			data['ctl00$MainContent$password'] = self.password
 			data["__VIEWSTATE"] = s_login.select_one("#__VIEWSTATE")["value"]
 			data["__VIEWSTATEGENERATOR"] = s_login.select_one("#__VIEWSTATEGENERATOR")["value"]
 			data["__EVENTVALIDATION"] = s_login.select_one('#__EVENTVALIDATION')['value']
@@ -176,7 +181,8 @@ class SIS:
 		
 		return title, info
 
+
 if __name__ == "__main__":
-	SIS = SIS()
-	print(SIS.update_grades("",""))
+	SIS = SIS("","")
+	print(SIS.update_grades())
 
