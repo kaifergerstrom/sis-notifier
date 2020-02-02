@@ -12,6 +12,8 @@ class SIS:
 
 	json_path = "gradebook.json"
 
+	notifications = {'new':[], 'update':[]}
+
 
 	def __init__(self, username, password):
 		"""Constructor for SIS viewer, stores global username and password variable
@@ -40,12 +42,10 @@ class SIS:
 	def update_grades(self):
 		"""Detects new additions to the assignments tab in SIS and updates JSON file
 
-		:returns: list of new additions to the list
+		:returns: void
 		"""
 
 		curr_soup = self.__get_gradebook_from_sis()
-
-		additions = []  # Final return list
 
 		# Create current JSON object, if somehow parsing fails create new JSON array
 		try:
@@ -56,15 +56,22 @@ class SIS:
 		table = self.__get_assignment_grid(curr_soup)  # Get the gradebook table from SIS
 
 		for tr in table.findAll("tr"):  # Loop through all the assignments in table
+
 			title, data = self.__get_assignment_info(tr)  # Get the assignment dictionary for each row
-			if not self.__is_task_in_list(title, curr_json):  # If the assignment is not in the array
+			
+			check_task, index = self.__is_task_in_list(title, curr_json)
+			if not check_task:  # If the assignment is not in the array
 				curr_json.append(data)  # Add to current JSON 
-				additions.append(data)  # Append to additions column
+				self.notifications["new"].append({'title':title, 'date':data[title]['date_added'], 'course':data[title]['course'], 'score':data[title]['points']})  # Append to additions column
+			else:
+				old_score = curr_json[index][title]['points']
+				new_score = data[title]['points']
+				if old_score != new_score:
+					self.notifications["update"].append({'title':title, 'date':data[title]['date_added'], 'course':data[title]['course'], 'old_score':old_score, 'new_score': new_score})  # Append to additions column
+					curr_json[index][title] = data[title]
 
 		self.__save_dict_as_json(curr_json, self.json_path)  # Save the updated JSON file
 
-		return additions
-		
 
 	def __is_task_in_list(self, key, data):
 		"""Saves formatted dictionary to json file
@@ -74,11 +81,11 @@ class SIS:
 
 		:returns: boolean whether in gradebook or not
 		"""
-		for task in data:  # Iterate through JSON array
+		for i, task in enumerate(data):  # Iterate through JSON array
 			key_check = list(task.keys())[0]   # Get the assignment name for each assignment
 			if key == key_check:  # If key is in the assignment keys
-				return True
-		return False
+				return True, i
+		return False, -1
 
 
 	def __get_gradebook_from_sis(self):
@@ -151,7 +158,7 @@ class SIS:
 		:returns: formatted dictionary with assignment information
 		"""
 		info = {}  # Empty dictionary to populate
-		date = datetime.datetime.now().isoformat()  # Save date of addition
+		current_time = datetime.datetime.now().isoformat()  # Save date of addition
 
 		for i, div in enumerate(row.findAll("div")):  # Find all the div elements in row
 
@@ -177,12 +184,13 @@ class SIS:
 				points = points.split("(")[0]
 				points = points.replace(" ", "")
 
-		info[title] = {'teacher':teacher, 'course':course, 'period': period, 'date_added':date, 'date': date, 'points':points}  # Populate final dictionary for data
+		info[title] = {'teacher':teacher, 'course':course, 'period': period, 'date_added':current_time, 'date': date, 'points':points}  # Populate final dictionary for data
 		
 		return title, info
 
 
 if __name__ == "__main__":
 	SIS = SIS("","")
-	print(SIS.update_grades())
+	SIS.update_grades()
+	print(SIS.notifications)
 
