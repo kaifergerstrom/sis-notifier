@@ -1,16 +1,8 @@
-from selenium import webdriver
-from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 from bs4 import BeautifulSoup, SoupStrainer
 import requests
-import collections
-import json
-import argparse
-import getpass
-import time
-import pickle
 import re
-from xpath_soup import xpath_soup
-from selenium.webdriver.common.action_chains import ActionChains
+import json
+import datetime
 
 class SIS:
 
@@ -19,6 +11,51 @@ class SIS:
 	p_gradebook = "https://sisstudent.fcps.edu/SVUE/PXP2_Gradebook.aspx?AGU=0"
 
 	def __init__(self):
+
+		#soup = self.get_gradebook_from_sis("1420569", "Ready2go")
+		new_soup = self.get_soup_from_file("After.html")
+		#old_soup = self.get_soup_from_file("Before.html")
+
+		#self.detect_changes(new_soup, old_soup)
+
+		self.update_grades(new_soup, "before.json")
+
+	
+	def save_dict_as_json(self, data, filename):
+		with open(filename, 'w') as outfile:
+			json.dump(data, outfile)
+
+	def update_grades(self, new_soup, filename):
+
+		old_json = self.parse_json("before.json")
+
+		table = self.get_assignment_grid(new_soup)
+
+		for tr in table.findAll("tr"):
+			title, data = self.get_assignment_info(tr)
+			if not self.is_task_in_list(title, old_json):
+				old_json.append(data)
+				print(data[title]['date_added'])
+
+		#print(old_json)
+
+		self.save_dict_as_json(old_json, filename)
+		print(old_json)
+		done = self.parse_json("before.json")
+		print(done)
+
+
+	def is_task_in_list(self, key, data):
+		for task in data:
+			key_check = list(task.keys())[0] 
+			if key == key_check:
+				return True
+		return False
+
+	def detect_changes(self, new_soup, old_soup):
+		pass
+
+	def get_gradebook_from_sis(self, username, password):
 
 		with requests.Session() as s:  # Create a requests session
 			page = s.get(self.p_login)  # Navigate to the login page
@@ -39,23 +76,45 @@ class SIS:
 			soup = s.get(self.p_gradebook)
 			soup = BeautifulSoup(soup.content, "html.parser")
 
-			table = soup.find("div", {"class": "gb-student-assignments-grid"}).find("tbody")
-			for tr in table.findAll("tr"):
-				for i, div in enumerate(tr.findAll("div")):
-					if i == 0:
-						title = div.text
-					elif i == 1:
-						teacher = div.text
-					elif i == 2:
-						date = div.text
-					elif i == 3:
-						points = div.text
-				print([title, teacher, date, points])
+			if soup.find("div", {"class": "student-info"}):
+				return soup
+			raise ValueError('Invalid login credentials')
+
 			
-	def find(self, soup, class_name, elem="div", one=False):
-		if one:
-			return soup.find(elem, {"class": re.compile(r'\b{}\b'.format(class_name))})
-		return soup.findAll(elem, {"class": re.compile(r'\b{}\b'.format(class_name))})
+	def parse_json(self, filename):
+		with open(filename) as json_file:
+			return json.load(json_file)
+
+	def get_assignment_grid(self, page):
+		return page.find("div", {"class": "gb-student-assignments-grid"}).find("tbody")
+
+	def get_soup_from_file(self, filename):
+		return BeautifulSoup(open(filename), "html.parser")
+
+	def get_assignment_info(self, row):
+		info = {}
+		for i, div in enumerate(row.findAll("div")):
+			if i == 0:
+				title = div.text
+				title = title.replace("\n", "")
+			elif i == 1:
+				teacher = div.text.split(" ")[0]
+				teacher = ''.join(teacher)
+				teacher = teacher.replace(",", "")
+
+				course = div.text.split(" ")[3:]
+				course = ' '.join(course)
+				period = (course.split("("))[1].split(")")[0]
+				course = course.split("(")[0]
+			elif i == 2:
+				date = div.text.split("Due Date: ")[1]
+			elif i == 3:
+				points = div.text
+				points = points.replace("Points: ", "")
+				points = points.split("(")[0]
+				points = points.replace(" ", "")
+		info[title] = {'teacher':teacher, 'course':course, 'period': period, 'date_added':datetime.datetime.now().isoformat(), 'date': date, 'points':points}
+		return title, info
 		
 
 
