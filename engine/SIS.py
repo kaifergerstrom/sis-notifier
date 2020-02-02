@@ -10,61 +10,84 @@ class SIS:
 	p_login = "https://sisstudent.fcps.edu/SVUE/"
 	p_gradebook = "https://sisstudent.fcps.edu/SVUE/PXP2_Gradebook.aspx?AGU=0"
 
+	json_path = "gradebook.json"
+
+
 	def __init__(self):
-
-		#soup = self.get_gradebook_from_sis("1420569", "Ready2go")
-		new_soup = self.get_soup_from_file("After.html")
-		#old_soup = self.get_soup_from_file("Before.html")
-
-		#self.detect_changes(new_soup, old_soup)
-
-		self.update_grades(new_soup, "before.json")
+		pass
 
 	
-	def save_dict_as_json(self, data, filename):
+	def __save_dict_as_json(self, data, filename):
+		"""Saves formatted dictionary to json file
+
+		:param data: dictionary to save to json file
+		:param filename: output filename or path to save json
+
+		:returns: void
+		"""
 		with open(filename, 'w') as outfile:
 			json.dump(data, outfile)
 
-	def update_grades(self, new_soup, filename):
 
-		old_json = self.parse_json("before.json")
+	def update_grades(self, username, password):
+		"""Detects new additions to the assignments tab in SIS and updates JSON file
 
-		table = self.get_assignment_grid(new_soup)
+		:returns: list of new additions to the list
+		"""
 
-		for tr in table.findAll("tr"):
-			title, data = self.get_assignment_info(tr)
-			if not self.is_task_in_list(title, old_json):
-				old_json.append(data)
-				print(data[title]['date_added'])
+		curr_soup = self.__get_gradebook_from_sis(username, password)
 
-		#print(old_json)
+		additions = []  # Final return list
 
-		self.save_dict_as_json(old_json, filename)
-		print(old_json)
-		done = self.parse_json("before.json")
-		print(done)
+		# Create current JSON object, if somehow parsing fails create new JSON array
+		try:
+			curr_json = self.__parse_json(self.json_path)
+		except:
+			curr_json = []
 
+		table = self.__get_assignment_grid(curr_soup)  # Get the gradebook table from SIS
 
-	def is_task_in_list(self, key, data):
-		for task in data:
-			key_check = list(task.keys())[0] 
-			if key == key_check:
+		for tr in table.findAll("tr"):  # Loop through all the assignments in table
+			title, data = self.__get_assignment_info(tr)  # Get the assignment dictionary for each row
+			if not self.__is_task_in_list(title, curr_json):  # If the assignment is not in the array
+				curr_json.append(data)  # Add to current JSON 
+				additions.append(data)  # Append to additions column
+
+		self.__save_dict_as_json(curr_json, self.json_path)  # Save the updated JSON file
+
+		return additions
+		
+
+	def __is_task_in_list(self, key, data):
+		"""Saves formatted dictionary to json file
+
+		:param key: string key to check
+		:param data: gradebook JSON array to check for key
+
+		:returns: boolean whether in gradebook or not
+		"""
+		for task in data:  # Iterate through JSON array
+			key_check = list(task.keys())[0]   # Get the assignment name for each assignment
+			if key == key_check:  # If key is in the assignment keys
 				return True
 		return False
 
-	def detect_changes(self, new_soup, old_soup):
-		pass
 
-	def get_gradebook_from_sis(self, username, password):
+	def __get_gradebook_from_sis(self, username, password):
+		"""Creates session to webscrap aspx SIS gradebook
 
+		:param username: username for SIS login
+		:param password: password for SIS login
+
+		:returns: bs4 object for raw html of gradebook page
+		"""
 		with requests.Session() as s:  # Create a requests session
+
 			page = s.get(self.p_login)  # Navigate to the login page
 			s_login = BeautifulSoup(page.content, features="html.parser")  # Create a parser for the gradebook
 
 			# Prepare the data to post to the login form (apsx)
 			data = {}
-			username = ""
-			password = ""
 			data['ctl00$MainContent$username'] = username
 			data['ctl00$MainContent$password'] = password
 			data["__VIEWSTATE"] = s_login.select_one("#__VIEWSTATE")["value"]
@@ -76,47 +99,84 @@ class SIS:
 			soup = s.get(self.p_gradebook)
 			soup = BeautifulSoup(soup.content, "html.parser")
 
+			# Check if succesfully logged in (student info page)
 			if soup.find("div", {"class": "student-info"}):
 				return soup
-			raise ValueError('Invalid login credentials')
+
+			raise ValueError('Invalid login credentials')  # If not logged in, raise an error
 
 			
-	def parse_json(self, filename):
+	def __parse_json(self, filename):
+		"""Open and parse JSON file
+
+		:param filename: path to JSON file
+
+		:returns: parsed JSON object
+		"""
 		with open(filename) as json_file:
 			return json.load(json_file)
 
-	def get_assignment_grid(self, page):
-		return page.find("div", {"class": "gb-student-assignments-grid"}).find("tbody")
 
-	def get_soup_from_file(self, filename):
+	def __get_assignment_grid(self, soup):
+		"""Get soup object for assignment table
+
+		:param filename: soup of gradebook page
+
+		:returns: soup object for assignment table
+		"""
+		return soup.find("div", {"class": "gb-student-assignments-grid"}).find("tbody")
+
+
+	def __get_soup_from_file(self, filename):
+		"""Get soup object from file
+
+		:param filename: filename to open (html)
+
+		:returns: soup object for page
+		"""
 		return BeautifulSoup(open(filename), "html.parser")
 
-	def get_assignment_info(self, row):
-		info = {}
-		for i, div in enumerate(row.findAll("div")):
-			if i == 0:
+
+	def __get_assignment_info(self, row):
+		"""Extract assignment information from row in assignment table.
+		This has to be a hard coded sequence becuase SIS has no real html (website builder)
+
+		:param row: soup object of row for assignment
+
+		:returns: formatted dictionary with assignment information
+		"""
+		info = {}  # Empty dictionary to populate
+		date = datetime.datetime.now().isoformat()  # Save date of addition
+
+		for i, div in enumerate(row.findAll("div")):  # Find all the div elements in row
+
+			if i == 0:  # First div stores the assignment title
 				title = div.text
 				title = title.replace("\n", "")
-			elif i == 1:
+			elif i == 1:  # Second div stores teacher name and course name "Last, FI Course(Period)""
+				# Parse out teacher name from string
 				teacher = div.text.split(" ")[0]
 				teacher = ''.join(teacher)
 				teacher = teacher.replace(",", "")
-
+				# Get course title from string
 				course = div.text.split(" ")[3:]
 				course = ' '.join(course)
+				# Get period between course name
 				period = (course.split("("))[1].split(")")[0]
-				course = course.split("(")[0]
+				course = course.split("(")[0]  # Remove period string from course title
 			elif i == 2:
-				date = div.text.split("Due Date: ")[1]
-			elif i == 3:
+				date = div.text.split("Due Date: ")[1]  # Get the due date (not really important)
+			elif i == 3:  # Fourth div stores points of assignment "Points: 0/10(0%)"
 				points = div.text
 				points = points.replace("Points: ", "")
 				points = points.split("(")[0]
 				points = points.replace(" ", "")
-		info[title] = {'teacher':teacher, 'course':course, 'period': period, 'date_added':datetime.datetime.now().isoformat(), 'date': date, 'points':points}
-		return title, info
+
+		info[title] = {'teacher':teacher, 'course':course, 'period': period, 'date_added':date, 'date': date, 'points':points}  # Populate final dictionary for data
 		
+		return title, info
 
-
-SIS = SIS()
+if __name__ == "__main__":
+	SIS = SIS()
+	print(SIS.update_grades("",""))
 
