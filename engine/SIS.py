@@ -132,7 +132,7 @@ class SIS:
 	def __get_assignment_grid(self, soup):
 		"""Get soup object for assignment table
 
-		:param filename: soup of gradebook page
+		:param soup: soup of gradebook page
 
 		:returns: soup object for assignment table
 		"""
