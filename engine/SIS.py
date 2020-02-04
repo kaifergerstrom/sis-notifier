@@ -1,10 +1,12 @@
-from bs4 import BeautifulSoup, SoupStrainer
+from bs4 import BeautifulSoup
+from getpass import getpass
 import requests
 import re
 import json
 import datetime
 
 class SIS:
+
 
 	# Links for pages in SIS
 	p_login = "https://sisstudent.fcps.edu/SVUE/"
@@ -44,7 +46,6 @@ class SIS:
 
 		:returns: void
 		"""
-
 		curr_soup = self.__get_gradebook_from_sis()
 
 		# Create current JSON object, if somehow parsing fails create new JSON array
@@ -110,9 +111,9 @@ class SIS:
 			s.post(self.p_login, data=data)
 			soup = s.get(self.p_gradebook)
 			soup = BeautifulSoup(soup.content, "html.parser")
-
+			
 			# Check if succesfully logged in (student info page)
-			if soup.find("div", {"class": "student-info"}):
+			if soup.find("div", {"class": "gb-student-assignments-grid"}):
 				return soup
 
 			raise ValueError('Invalid login credentials')  # If not logged in, raise an error
@@ -190,7 +191,9 @@ class SIS:
 
 
 if __name__ == "__main__":
-	SIS = SIS("","")
+	username = input("SIS Username: ")
+	password = getpass("SIS Password: ")
+	SIS = SIS(username,password) # username, password
 	SIS.update_grades()
 	print(SIS.notifications)
 
