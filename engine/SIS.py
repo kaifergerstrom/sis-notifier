@@ -148,7 +148,7 @@ class SIS:
 		:returns: soup object for page
 		"""
 		return BeautifulSoup(open(filename), "html.parser")
-
+		
 
 	def __get_assignment_info(self, row):
 		"""Extract assignment information from row in assignment table.
