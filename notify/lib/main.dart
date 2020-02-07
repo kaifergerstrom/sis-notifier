@@ -250,7 +250,7 @@ class _LoginPageState extends State<LoginPage> {
   // Header bar design for login
   Widget _buildBar(BuildContext context) {
     return new AppBar(
-      title: new Text("Simple Login Example"),
+      title: new Text("Student VUE Login"),
       centerTitle: true,
     );
   }
@@ -264,7 +264,7 @@ class _LoginPageState extends State<LoginPage> {
             child: new TextField(
               controller: _usernameFilter,
               decoration: new InputDecoration(
-                labelText: 'Email'
+                labelText: 'Student ID'
               ),
             ),
           ),
@@ -279,6 +279,29 @@ class _LoginPageState extends State<LoginPage> {
           )
         ],
       ),
+    );
+  }
+
+  void _showDialog(String title, String body, bool error) {
+    // flutter defined function
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        // return object of type Dialog
+        return AlertDialog(
+          title: new Text(title),
+          content: new Text(body),
+          actions: <Widget>[
+            // usually buttons at the bottom of the dialog
+            new FlatButton(
+              child: new Text("Close"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -328,14 +351,19 @@ class _LoginPageState extends State<LoginPage> {
       print("Request failed with status: ${response.statusCode}.");
     }
     
-    if (isValid) {
-      var jsonData = '{ "username" : "$_username", "password" : "$_password"}';
-      print("Login information is valid! Saving data!");
-      updateUserData(jsonData);  // Update and save json to user.json
-    } else {
-      print("Invalid login information");
-    }
+    if (_username != "" && _password != "") {
+      if (isValid) {
+        var jsonData = '{ "username" : "$_username", "password" : "$_password"}';
+        print("Login information is valid! Saving data!");
+        updateUserData(jsonData);  // Update and save json to user.json
+      } else {
+        _showDialog("Invalid Credentials", "Please enter a valid ID and password for your StudentVue account.", true);
+        print("Invalid login information");
+      }
 
+    } else {
+      _showDialog("Empty Field", "Please fill out all fields!", true);
+    }
   }
 
 }
