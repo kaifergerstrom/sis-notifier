@@ -13,6 +13,7 @@ class SIS:
 	p_login = "https://sisstudent.fcps.edu/SVUE/"
 	p_gradebook = "https://sisstudent.fcps.edu/SVUE/PXP2_Gradebook.aspx?AGU=0"
 
+	is_logged_in = False
 
 	def __init__(self, username, password):
 		"""Constructor for SIS viewer, stores global username and password variable
@@ -25,12 +26,17 @@ class SIS:
 		self.username = username
 		self.password = password
 
-		directory = "users/{}".format(username)
-		if not os.path.exists(directory):
-			os.mkdir(directory)
-		self.json_path = "{}/gradebook.json".format(directory)
 
+		self.status = self.__get_gradebook_from_sis()
+		if self.status:
+			directory = "users/{}".format(username)
+			if not os.path.exists(directory):
+				os.mkdir(directory)
+			self.json_path = "{}/gradebook.json".format(directory)
 	
+	def isLoggedIn(self):
+		return self.status
+
 	def __save_dict_as_json(self, data, filename):
 		"""Saves formatted dictionary to json file
 
@@ -50,7 +56,7 @@ class SIS:
 		"""
 		notifications = {'new':[], 'update':[]}
 
-		curr_soup = self.__get_gradebook_from_sis()
+		curr_soup = self.soup
 
 		# Create current JSON object, if somehow parsing fails create new JSON array
 		try:
@@ -119,11 +125,15 @@ class SIS:
 			
 			# Check if succesfully logged in (student info page)
 			if soup.find("div", {"class": "gb-student-assignments-grid"}):
-				return soup
+				self.soup = soup
+				return True
+			return False
 
-			raise ValueError('Invalid login credentials')  # If not logged in, raise an error
 
-			
+	def isLoggedIn(self):
+		return str(self.is_logged_in).lower()
+
+
 	def __parse_json(self, filename):
 		"""Open and parse JSON file
 
@@ -199,5 +209,10 @@ if __name__ == "__main__":
 	username = input("SIS Username: ")
 	password = getpass("SIS Password: ")
 	SIS = SIS(username,password) # username, password
-	print(SIS.update_grades())
+	print(SIS.isLoggedIn())
+	if SIS.isLoggedIn() == True:
+		print("valid!")
+	else:
+		print("Not valid!")
+	#print(SIS.update_grades())
 
