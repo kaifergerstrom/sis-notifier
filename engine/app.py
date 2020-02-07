@@ -26,9 +26,9 @@ def status():
         password = base64.b64decode(password).decode("utf-8")
 
         SISpy = SIS(username,password) # username, password 
-        notifications = SISpy.update_grades()
-        status = SISpy.isLoggedIn()
-        return status
+        if SISpy.isLoggedIn():
+            _ = SISpy.update_grades()
+        return SISpy.get_status()
 
 if __name__ == '__main__':
     app.run()

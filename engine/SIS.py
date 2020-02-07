@@ -28,6 +28,7 @@ class SIS:
 
 
 		self.status = self.__get_gradebook_from_sis()
+		
 		if self.status:
 			directory = "users/{}".format(username)
 			if not os.path.exists(directory):
@@ -130,10 +131,6 @@ class SIS:
 			return False
 
 
-	def isLoggedIn(self):
-		return str(self.is_logged_in).lower()
-
-
 	def __parse_json(self, filename):
 		"""Open and parse JSON file
 
@@ -144,6 +141,9 @@ class SIS:
 		with open(filename) as json_file:
 			return json.load(json_file)
 
+
+	def get_status(self):
+		return str(self.isLoggedIn()).lower()
 
 	def __get_assignment_grid(self, soup):
 		"""Get soup object for assignment table
@@ -208,10 +208,10 @@ class SIS:
 if __name__ == "__main__":
 	username = input("SIS Username: ")
 	password = getpass("SIS Password: ")
-	SIS = SIS(username,password) # username, password
-	print(SIS.isLoggedIn())
-	if SIS.isLoggedIn() == True:
-		print("valid!")
+	SISpy = SIS(username,password) # username, password
+	print(SISpy.isLoggedIn())
+	if SISpy.isLoggedIn():
+		SISpy.update_grades()
 	else:
 		print("Not valid!")
 	#print(SIS.update_grades())
