@@ -4,6 +4,7 @@ import requests
 import re
 import json
 import datetime
+import os
 
 class SIS:
 
@@ -11,10 +12,6 @@ class SIS:
 	# Links for pages in SIS
 	p_login = "https://sisstudent.fcps.edu/SVUE/"
 	p_gradebook = "https://sisstudent.fcps.edu/SVUE/PXP2_Gradebook.aspx?AGU=0"
-
-	json_path = "gradebook.json"
-
-	notifications = {'new':[], 'update':[]}
 
 
 	def __init__(self, username, password):
@@ -27,6 +24,11 @@ class SIS:
 		"""
 		self.username = username
 		self.password = password
+
+		directory = "users/{}".format(username)
+		if not os.path.exists(directory):
+			os.mkdir(directory)
+		self.json_path = "{}/gradebook.json".format(directory)
 
 	
 	def __save_dict_as_json(self, data, filename):
@@ -44,8 +46,10 @@ class SIS:
 	def update_grades(self):
 		"""Detects new additions to the assignments tab in SIS and updates JSON file
 
-		:returns: void
+		:returns: notifications dictionary
 		"""
+		notifications = {'new':[], 'update':[]}
+
 		curr_soup = self.__get_gradebook_from_sis()
 
 		# Create current JSON object, if somehow parsing fails create new JSON array
@@ -63,15 +67,16 @@ class SIS:
 			check_task, index = self.__is_task_in_list(title, curr_json)
 			if not check_task:  # If the assignment is not in the array
 				curr_json.append(data)  # Add to current JSON 
-				self.notifications["new"].append({'title':title, 'date':data[title]['date_added'], 'course':data[title]['course'], 'score':data[title]['points']})  # Append to additions column
+				notifications["new"].append({'title':title, 'date':data[title]['date_added'], 'course':data[title]['course'], 'score':data[title]['points']})  # Append to additions column
 			else:
 				old_score = curr_json[index][title]['points']
 				new_score = data[title]['points']
 				if old_score != new_score:
-					self.notifications["update"].append({'title':title, 'date':data[title]['date_added'], 'course':data[title]['course'], 'old_score':old_score, 'new_score': new_score})  # Append to additions column
+					notifications["update"].append({'title':title, 'date':data[title]['date_added'], 'course':data[title]['course'], 'old_score':old_score, 'new_score': new_score})  # Append to additions column
 					curr_json[index][title] = data[title]
-
+		
 		self.__save_dict_as_json(curr_json, self.json_path)  # Save the updated JSON file
+		return notifications
 
 
 	def __is_task_in_list(self, key, data):
@@ -194,6 +199,5 @@ if __name__ == "__main__":
 	username = input("SIS Username: ")
 	password = getpass("SIS Password: ")
 	SIS = SIS(username,password) # username, password
-	SIS.update_grades()
-	print(SIS.notifications)
+	print(SIS.update_grades())
 
