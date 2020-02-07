@@ -27,6 +27,7 @@ dependencies:
   flutter_local_notifications: ^0.7.1+3
   http:
   path_provider: #add this in yours
+  encrypt:
 
 dev_dependencies:
   flutter_test:

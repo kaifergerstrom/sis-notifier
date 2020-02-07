@@ -4,6 +4,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'user.dart';
+import 'package:encrypt/encrypt.dart';
 
 // When the app starts, set it to the designated page
 void main() => runApp(new MaterialApp(home: new HomePage()));
@@ -32,6 +33,10 @@ class _HomePageState extends State<HomePage> {
     var initSetttings = new InitializationSettings(android, iOS);
     flutterLocalNotificationsPlugin.initialize(initSetttings);
   }
+  
+  Future navigateToLogin(context) async {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage()));
+  }
 
   Future onSelectNotification(String payload) {
     // Build the notification payload
@@ -45,23 +50,45 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Physical formatting of homepage
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: new AppBar(
-        title: new Text('Flutter Local Notification'),
-      ),
-      body: new Center(
-        child: new RaisedButton(
-          onPressed: () => displayNotifications(),
-          child: new Text(
-            'Demo',
-            style: Theme.of(context).textTheme.headline,
-          ),
+    return new Scaffold(
+        appBar: new AppBar(
+          title: new Text("Raised Button"),
         ),
-      ),
-    );
+        body: new Center(
+          child: new Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              new Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: <Widget>[
+                  new RaisedButton(
+                    padding: const EdgeInsets.all(8.0),
+                    textColor: Colors.white,
+                    color: Colors.blue,
+                    onPressed: () => displayNotifications(),
+                    child: new Text("Run Notifications"),
+                  ),
+                  new RaisedButton(
+                    onPressed: () => navigateToLogin(context),
+                    textColor: Colors.white,
+                    color: Colors.red,
+                    padding: const EdgeInsets.all(8.0),
+                    child: new Text(
+                      "Change StudentVUE Information",
+                    ),
+                  ),
+                ],
+              )
+            ],
+          ),
+        ));
+  }
+
+  sayHi() async {
+    print("Hello");
   }
 
   // Call the api and get the data, then display the notifications
@@ -74,9 +101,15 @@ class _HomePageState extends State<HomePage> {
     // Parse json object into username and password data
     String username = user_data['username'];
     String password = user_data['password'];
-  
+    
+    var bytes = utf8.encode(password);
+    var base64Str = base64.encode(bytes);
+
+    String ip = "10.0.2.2:5000";
+
     // URL format for api call to flask server
-    String url = "http://10.0.2.2:5000/api/v1/?username=$username&password=$password";
+    String url = "http://$ip/api/update?username=$username&password=$base64Str";
+    print(url);
     
     // Get http response from flask script
     http.Response response = await http.get(url);
@@ -171,6 +204,8 @@ class _LoginPageState extends State<LoginPage> {
   String _username = "";
   String _password = "";
 
+  bool isValid = false;
+
   _LoginPageState() {
     // Create listeners for username and password changes
     _usernameFilter.addListener(_usernameListen);
@@ -254,7 +289,7 @@ class _LoginPageState extends State<LoginPage> {
         children: <Widget>[
           new RaisedButton(
             child: new Text('Login'),
-            onPressed: _loginPressed,
+            onPressed: () => _loginPressed(),
           ),
         ],
       ),
@@ -263,12 +298,44 @@ class _LoginPageState extends State<LoginPage> {
 
 
   // Run this function when login button pressed
-  void _loginPressed () {
+  void _loginPressed() async {
     // Construct json to store in file
     _username = _username.trim();
     _password = _password.trim();
-    var jsonData = '{ "username" : "$_username", "password" : "$_password"}';
-    updateUserData(jsonData);  // Update and save json to user.json
+
+
+    String ip = "10.0.2.2:5000";
+
+    var bytes = utf8.encode(_password);
+    var base64Str = base64.encode(bytes);
+
+    // URL format for api call to flask server
+    String url = "http://$ip/api/status?username=$_username&password=$base64Str";
+    print(url);
+    
+    bool isValid = false;
+
+    http.Response response = await http.get(url);
+    if (response.statusCode == 200) {
+      setState(() {
+        // Assign the parsed json 
+        isValid = (response.body).toLowerCase() == 'true';
+      });
+      print("Successfully fetched json from flask server!");
+    } else {
+      // Reset the parsed json if, errors
+      isValid = false;
+      print("Request failed with status: ${response.statusCode}.");
+    }
+    
+    if (isValid) {
+      var jsonData = '{ "username" : "$_username", "password" : "$_password"}';
+      print("Login information is valid! Saving data!");
+      updateUserData(jsonData);  // Update and save json to user.json
+    } else {
+      print("Invalid login information");
+    }
+
   }
 
 }
