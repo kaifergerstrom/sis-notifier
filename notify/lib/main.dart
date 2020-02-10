@@ -20,8 +20,11 @@ class _HomePageState extends State<HomePage> {
   // Define notifications plugins for flutter
   FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
 
+  Timer timer;
+
   // Define parsedJson object to store data
   var parsedJson = json.decode('{"new":[], "update":[]}');
+
 
   @override
   void initState() {
@@ -32,6 +35,9 @@ class _HomePageState extends State<HomePage> {
     var iOS = new IOSInitializationSettings();
     var initSetttings = new InitializationSettings(android, iOS);
     flutterLocalNotificationsPlugin.initialize(initSetttings);
+
+    timer = Timer.periodic(Duration(seconds: 30), (Timer t) => displayNotifications());
+
   }
   
   Future navigateToLogin(context) async {
@@ -55,7 +61,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return new Scaffold(
         appBar: new AppBar(
-          title: new Text("Raised Button"),
+          title: new Text("SIS Notifier"),
         ),
         body: new Center(
           child: new Column(
@@ -326,43 +332,51 @@ class _LoginPageState extends State<LoginPage> {
     _username = _username.trim();
     _password = _password.trim();
 
+    // Check if any of the fields are empty, if so display error
 
-    String ip = "10.0.2.2:5000";
-
-    var bytes = utf8.encode(_password);
-    var base64Str = base64.encode(bytes);
-
-    // URL format for api call to flask server
-    String url = "http://$ip/api/status?username=$_username&password=$base64Str";
-    print(url);
-    
-    bool isValid = false;
-
-    http.Response response = await http.get(url);
-    if (response.statusCode == 200) {
-      setState(() {
-        // Assign the parsed json 
-        isValid = (response.body).toLowerCase() == 'true';
-      });
-      print("Successfully fetched json from flask server!");
+    if (_username == "" || _password == "") {
+      _showDialog("Empty Field", "Please fill out all fields!", true);
     } else {
-      // Reset the parsed json if, errors
-      isValid = false;
-      print("Request failed with status: ${response.statusCode}.");
-    }
-    
-    if (_username != "" && _password != "") {
+      
+      // String ip for server
+      String ip = "10.0.2.2:5000";
+
+      // Encode the inserted password for post request
+      var bytes = utf8.encode(_password);
+      var base64Str = base64.encode(bytes);
+
+      // URL format for api call to flask server
+      String url = "http://$ip/api/status?username=$_username&password=$base64Str";
+      print(url);
+      
+      // Boolean if the credentials are valid
+      bool isValid = false;
+
+      // Get the response from the server and return the boolean value
+      http.Response response = await http.get(url);
+      if (response.statusCode == 200) {
+        setState(() {
+          // Assign the parsed json 
+          isValid = (response.body).toLowerCase() == 'true';
+        });
+        print("Successfully fetched json from flask server!");
+      } else {
+        // Reset the parsed json if, errors
+        isValid = false;
+        print("Request failed with status: ${response.statusCode}.");
+      }
+      
+      // If the informating provided is valid, save the variables in memory and create gradebook on server
       if (isValid) {
         var jsonData = '{ "username" : "$_username", "password" : "$_password"}';
         print("Login information is valid! Saving data!");
+        _showDialog("Success!", "Succesfully saved StudentVue Credentials!.", false);
         updateUserData(jsonData);  // Update and save json to user.json
       } else {
         _showDialog("Invalid Credentials", "Please enter a valid ID and password for your StudentVue account.", true);
         print("Invalid login information");
       }
 
-    } else {
-      _showDialog("Empty Field", "Please fill out all fields!", true);
     }
   }
 

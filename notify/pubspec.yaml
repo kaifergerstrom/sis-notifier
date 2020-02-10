@@ -28,6 +28,7 @@ dependencies:
   http:
   path_provider: #add this in yours
   encrypt:
+  workmanager: ^0.2.0
 
 dev_dependencies:
   flutter_test:
