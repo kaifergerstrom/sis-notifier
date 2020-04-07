@@ -1,197 +1,71 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'dart:convert';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
-import 'user.dart';
-import 'package:encrypt/encrypt.dart';
+import 'dart:convert';
 
 // When the app starts, set it to the designated page
-void main() => runApp(new MaterialApp(home: new HomePage()));
+void main() => runApp(new MaterialApp(home: new LoginPage()));
 
-// Constructor for HomePage object
-class HomePage extends StatefulWidget {
+class MyApp extends StatefulWidget {
   @override
-  _HomePageState createState() => _HomePageState();
+  State<StatefulWidget> createState() {
+    return _MyAppState();
+  }
 }
 
-// HomePageState (actual code that runs when on HomePage)
-class _HomePageState extends State<HomePage> {
-  // Define notifications plugins for flutter
-  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
+class _MyAppState extends State<MyApp> {
+  String _message = '';
 
-  Timer timer;
+  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
 
-  // Define parsedJson object to store data
-  var parsedJson = json.decode('{"new":[], "update":[]}');
-
+  _register() {
+    _firebaseMessaging.getToken().then((token) => print(token));
+  }
 
   @override
   void initState() {
-    // Define notifications plugin for IOS and Android
+    // TODO: implement initState
     super.initState();
-    flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
-    var android = new AndroidInitializationSettings('@mipmap/ic_launcher');
-    var iOS = new IOSInitializationSettings();
-    var initSetttings = new InitializationSettings(android, iOS);
-    flutterLocalNotificationsPlugin.initialize(initSetttings);
-
-    timer = Timer.periodic(Duration(seconds: 30), (Timer t) => displayNotifications());
-
+    getMessage();
   }
   
-  Future navigateToLogin(context) async {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage()));
+  void getMessage(){
+    _firebaseMessaging.configure(
+        onMessage: (Map<String, dynamic> message) async {
+      print('on message $message');
+      setState(() => _message = message["notification"]["title"]);
+    }, onResume: (Map<String, dynamic> message) async {
+      print('on resume $message');
+      setState(() => _message = message["notification"]["title"]);
+    }, onLaunch: (Map<String, dynamic> message) async {
+      print('on launch $message');
+      setState(() => _message = message["notification"]["title"]);
+    });
   }
-
-  Future onSelectNotification(String payload) {
-    // Build the notification payload
-    debugPrint("payload : $payload");
-    showDialog(
-      context: context,
-      builder: (_) => new AlertDialog(
-        title: new Text('Notification'),
-        content: new Text('$payload'),
-      ),
-    );
-  }
-
 
   @override
   Widget build(BuildContext context) {
-    return new Scaffold(
-        appBar: new AppBar(
-          title: new Text("SIS Notifier"),
-        ),
-        body: new Center(
-          child: new Column(
+    // TODO: implement build
+    return MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              new Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: <Widget>[
-                  new RaisedButton(
-                    padding: const EdgeInsets.all(8.0),
-                    textColor: Colors.white,
-                    color: Colors.blue,
-                    onPressed: () => displayNotifications(),
-                    child: new Text("Run Notifications"),
-                  ),
-                  new RaisedButton(
-                    onPressed: () => navigateToLogin(context),
-                    textColor: Colors.white,
-                    color: Colors.red,
-                    padding: const EdgeInsets.all(8.0),
-                    child: new Text(
-                      "Change StudentVUE Information",
-                    ),
-                  ),
-                ],
-              )
-            ],
-          ),
-        ));
-  }
-
-  sayHi() async {
-    print("Hello");
-  }
-
-  // Call the api and get the data, then display the notifications
-  displayNotifications() async {
-    
-    // Get user info from user.json file (local)
-    String user_info = await getUserData();
-    var user_data = json.decode(user_info);
-
-    // Parse json object into username and password data
-    String username = user_data['username'];
-    String password = user_data['password'];
-    
-    var bytes = utf8.encode(password);
-    var base64Str = base64.encode(bytes);
-
-    String ip = "10.0.2.2:5000";
-
-    // URL format for api call to flask server
-    String url = "http://$ip/api/update?username=$username&password=$base64Str";
-    print(url);
-    
-    // Get http response from flask script
-    http.Response response = await http.get(url);
-    if (response.statusCode == 200) {
-      setState(() {
-        // Assign the parsed json 
-        parsedJson = json.decode(response.body);
-      });
-      print("Successfully fetched json from flask server!");
-    } else {
-      // Reset the parsed json if, errors
-      parsedJson = json.decode('{"new":[], "update":[]}');
-      print("Request failed with status: ${response.statusCode}.");
-    }
-  
-    // Define new and update columns for json return
-    List<dynamic> new_notifications = parsedJson["new"];
-    List<dynamic> update_notifications = parsedJson["update"];
-
-    // Int to increment channel_id which sends seperate notifications
-    int channel_id = 0;
-
-    // Construct the data for new notification type
-    for (var update in parsedJson['new']) {
-      // Data from flask json
-      String assignment = update['title'];
-      String course = update['course'];
-      String score = update['score'];
-
-      // Notification header and body
-      String subject = "$course: $assignment has been graded";
-      String body = "You recieved a $score";
-
-      // Show the notification
-      showNotification(subject, body, channel_id);
-
-      channel_id++;  // Increment channel id for next channel
-    }
-
-    // Construct the data for update notification type
-    for (var update in parsedJson['update']) {
-      // Data from flask json
-      String assignment = update['title'];
-      String course = update['course'];
-      String old_score = update['old_score'];
-      String new_score = update['new_score'];
-
-      // Notification header and body
-      String subject = "$course: $assignment has been updated";
-      String body = "Your score was updated from $old_score to $new_score";
-
-      // Show the notification
-      showNotification(subject, body, channel_id);
-      
-      channel_id++;  // Increment channel id for next channel
-    }
-
-    print(parsedJson);
-
-  }
-
-  showNotification(String subject, String body, int channel_id) async {
-    // Send the notifications to IOS or Android
-    var android = new AndroidNotificationDetails(
-        'channel id', 'channel NAME', 'CHANNEL DESCRIPTION',
-        priority: Priority.High,importance: Importance.Max
+              Text("Message: $_message"),
+            OutlineButton(
+              child: Text("Register My Device"),
+              onPressed: () {
+                _register();
+              },
+            ),
+            // Text("Message: $message")
+          ]),
+        ),
+      ),
     );
-    var iOS = new IOSNotificationDetails();
-    var platform = new NotificationDetails(android, iOS);
-    await flutterLocalNotificationsPlugin.show(
-        channel_id, subject, body, platform,
-        payload: '');
   }
-
 }
-
 
 /* Login Page */
 
@@ -371,7 +245,7 @@ class _LoginPageState extends State<LoginPage> {
         var jsonData = '{ "username" : "$_username", "password" : "$_password"}';
         print("Login information is valid! Saving data!");
         _showDialog("Success!", "Succesfully saved StudentVue Credentials!.", false);
-        updateUserData(jsonData);  // Update and save json to user.json
+        //updateUserData(jsonData);  // Update and save json to user.json
       } else {
         _showDialog("Invalid Credentials", "Please enter a valid ID and password for your StudentVue account.", true);
         print("Invalid login information");
