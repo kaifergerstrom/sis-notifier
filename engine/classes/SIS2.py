@@ -56,7 +56,7 @@ class SIS:
 					curr_json[index][title] = data[title]
 		
 		self.__save_dict_as_json(curr_json, self.json_path)  # Save the updated JSON file
-		return notifications
+		return curr_json
 
 
 	def __is_task_in_list(self, key, data):

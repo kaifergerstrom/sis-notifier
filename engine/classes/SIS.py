@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 from getpass import getpass
 import requests
 import datetime
+from .DB import DB
 
 class SIS:
 
@@ -17,28 +18,15 @@ class SIS:
 
 		:returns: boolean of status
 		"""
+
+		self.db = DB()
+
 		# Assign the username and password to scrape
 		self.username = username
 		self.password = password
 
 		self.status, self.soup = self.__update_grade_data()  # Get the status and the soup
 		return self.status  # Return the status of the credentials
-
-
-	def extract_assignment_data(self):
-		"""Parse assignment grid soup
-
-		:param none:
-
-		:returns: dictionary of assignments in the grid
-		"""
-		print("yeetus!")
-		print(self.soup)
-		table = self.soup.find("div", {"class": "gb-student-assignments-grid"}).find("tbody")
-		
-		for tr in table.findAll("tr"):  # Loop through all the assignments in table
-			title, data = self.__get_assignment_info(tr)  # Get the assignment dictionary for each row
-			print(title, data)
 
 
 	def __get_assignment_info(self, row):

@@ -51,17 +51,17 @@ class DB:
 		self.c.execute(select_ids, [device_id])
 		rows = self.c.fetchall()
 
-		data = str({'test':'word', 'test2':24})  # Replace with gradebook.get()
+		#data = str({'test':'word', 'test2':24})  # Replace with gradebook.get()
 		
 		# If the device ID dosen't already exist, create it
 		if len(rows) == 0:
-			insert_user = "INSERT INTO users (DEVICE_ID,USERNAME,PASSWORD,DATA) VALUES (?,?,?,?)"
-			self.c.execute(insert_user, [device_id, username, password, data])
+			insert_user = "INSERT INTO users (DEVICE_ID,USERNAME,PASSWORD) VALUES (?,?,?)"
+			self.c.execute(insert_user, [device_id, username, password])
 			self.conn.commit()
 			print(f"[Status] Inserted {device_id} into users.db")
 		else:  # If the row does exist, just update the SIS credentials associated
-			update_user = "UPDATE users set USERNAME=?, PASSWORD=?, DATA=? WHERE DEVICE_ID=?"
-			self.c.execute(update_user, [username, password, data, device_id])
+			update_user = "UPDATE users set USERNAME=?, PASSWORD=? WHERE DEVICE_ID=?"
+			self.c.execute(update_user, [username, password, device_id])
 			self.conn.commit()
 			print(f"[Status] Updated credentials for {device_id} in users.db")
 			
@@ -79,6 +79,13 @@ class DB:
 		return rows
 
 
+	def get_grade_json(self, username):
+		grade_select = "SELECT DATA FROM users WHERE USERNAME=?"
+		self.c.execute(grade_select, [username])
+		rows = self.c.fetchall()
+		return rows[0][0]
+
+
 	def get_device_ids(self, username):
 		"""Get list of device ids associated to certain SIS account
 
@@ -94,6 +101,7 @@ class DB:
 
 if __name__ == "__main__":
 	DB = DB()
-	DB.create_user("uajdh7y1723h1jhsdad1723y", "1420569", "cGFzc3dvcmQ=")
+	#DB.create_user("uajdh7y1723h1jhsdad1723y", "1420569", "cGFzc3dvcmQ=")
 	print(DB.get_unique_users())
 	print(DB.get_device_ids("1420569"))
+	print(DB.get_grade_json("1420569"))
