@@ -41,12 +41,6 @@ class _LoginPageState extends State<LoginPage> {
 		configureNotifications();  // configure Firebase to get notifications
 	}
 
-	// Assign token to device
-	Future<String> _registerDevice() async {
-		String token = await _firebaseMessaging.getToken();
-		return token;
-	}
-
 	// Configure firebase notifications
 	void configureNotifications() {
 
@@ -184,7 +178,7 @@ class _LoginPageState extends State<LoginPage> {
 		_username = _username.trim();
 		_password = _password.trim();
 
-		var token = await _registerDevice();  // Register the token from firebase
+		var token = await _firebaseMessaging.getToken();  // Register the token from firebase
 
 		// Check if any of the fields are empty, if so display error
 		if (_username == "" || _password == "") {
@@ -222,7 +216,7 @@ class _LoginPageState extends State<LoginPage> {
 			}
 
 		}
-		
+
 	}
 
 }
