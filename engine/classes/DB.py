@@ -19,7 +19,7 @@ class DB:
 		dirname, filename = os.path.split(os.path.abspath(__file__))
 		db_path = f"{os.path.dirname(dirname)}\{self.db_file}"
 
-		self.conn = sqlite3.connect(db_path)  # Create sqlite connection
+		self.conn = sqlite3.connect(db_path, check_same_thread=False)  # Create sqlite connection
 		self.c = self.conn.cursor()
 
 		create_user_table = """

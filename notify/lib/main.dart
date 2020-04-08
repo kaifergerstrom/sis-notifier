@@ -4,67 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 // When the app starts, set it to the designated page
-void main() => runApp(new MaterialApp(home: new MyApp()));
-
-class MyApp extends StatefulWidget {
-  @override
-  State<StatefulWidget> createState() {
-    return _MyAppState();
-  }
-}
-
-class _MyAppState extends State<MyApp> {
-  String _message = '';
-
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
-
-  _register() {
-    _firebaseMessaging.getToken().then((token) => print(token));
-  }
-
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    getMessage();
-  }
-  
-  void getMessage(){
-    _firebaseMessaging.configure(
-        onMessage: (Map<String, dynamic> message) async {
-      print('on message $message');
-      setState(() => _message = message["notification"]["title"]);
-    }, onResume: (Map<String, dynamic> message) async {
-      print('on resume $message');
-      setState(() => _message = message["notification"]["title"]);
-    }, onLaunch: (Map<String, dynamic> message) async {
-      print('on launch $message');
-      setState(() => _message = message["notification"]["title"]);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // TODO: implement build
-    return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Text("Message: $_message"),
-            OutlineButton(
-              child: Text("Register My Device"),
-              onPressed: () {
-                _register();
-              },
-            ),
-            // Text("Message: $message")
-          ]),
-        ),
-      );
-  }
-}
-
+void main() => runApp(new MaterialApp(home: new LoginPage()));
 /* Login Page */
 
 class LoginPage extends StatefulWidget {
@@ -74,9 +14,15 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
 
+
+  String _message = '';  // Notification message
+  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
+
   // Username and password filter
   final TextEditingController _usernameFilter = new TextEditingController();
   final TextEditingController _passwordFilter = new TextEditingController();
+
+  String token;
 
   // Username and password placeholders
   String _username = "";
@@ -88,6 +34,32 @@ class _LoginPageState extends State<LoginPage> {
     // Create listeners for username and password changes
     _usernameFilter.addListener(_usernameListen);
     _passwordFilter.addListener(_passwordListen);
+
+    getMessage();
+
+  }
+
+  Future _register() async {
+    this.token = await _firebaseMessaging.getToken();
+  }
+
+  String getToken() {
+    _register();
+    return this.token;
+  }
+
+  void getMessage() {
+    _firebaseMessaging.configure(
+        onMessage: (Map<String, dynamic> message) async {
+      print('on message $message');
+      setState(() => _message = message["notification"]["title"]);
+    }, onResume: (Map<String, dynamic> message) async {
+      print('on resume $message');
+      setState(() => _message = message["notification"]["title"]);
+    }, onLaunch: (Map<String, dynamic> message) async {
+      print('on launch $message');
+      setState(() => _message = message["notification"]["title"]);
+    });
   }
 
   // Listener to update username value
@@ -204,8 +176,9 @@ class _LoginPageState extends State<LoginPage> {
     _username = _username.trim();
     _password = _password.trim();
 
-    // Check if any of the fields are empty, if so display error
+    var token = getToken();  // Register the device and fetch token
 
+    // Check if any of the fields are empty, if so display error
     if (_username == "" || _password == "") {
       _showDialog("Empty Field", "Please fill out all fields!", true);
     } else {
@@ -218,7 +191,7 @@ class _LoginPageState extends State<LoginPage> {
       var base64Str = base64.encode(bytes);
 
       // URL format for api call to flask server
-      String url = "http://$ip/api/status?username=$_username&password=$base64Str";
+      String url = "http://$ip/api/register?device_id=$token&username=$_username&password=$base64Str";
       print(url);
       
       // Boolean if the credentials are valid
