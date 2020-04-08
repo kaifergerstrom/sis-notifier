@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 // When the app starts, set it to the designated page
-void main() => runApp(new MaterialApp(home: new LoginPage()));
+void main() => runApp(new MaterialApp(home: new MyApp()));
 
 class MyApp extends StatefulWidget {
   @override
@@ -46,8 +46,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
-    return MaterialApp(
-      home: Scaffold(
+    return Scaffold(
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -62,8 +61,7 @@ class _MyAppState extends State<MyApp> {
             // Text("Message: $message")
           ]),
         ),
-      ),
-    );
+      );
   }
 }
 

@@ -27,14 +27,7 @@ class SIS:
 		self.username = username
 		self.password = password
 
-
 		self.status = self.__get_gradebook_from_sis()
-		
-		if self.status:
-			directory = "users/{}".format(username)
-			if not os.path.exists(directory):
-				os.mkdir(directory)
-			self.json_path = "{}/gradebook.json".format(directory)
 	
 	def isLoggedIn(self):
 		return self.status
