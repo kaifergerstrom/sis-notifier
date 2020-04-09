@@ -100,8 +100,9 @@ class DB:
 
 
 if __name__ == "__main__":
+	from Notify import Notify
 	DB = DB()
-	#DB.create_user("uajdh7y1723h1jhsdad1723y", "1420569", "cGFzc3dvcmQ=")
-	print(DB.get_unique_users())
-	print(DB.get_device_ids("1420569"))
-	print(DB.get_grade_json("1420569"))
+	notify = Notify()
+	notify.send_notification(DB.get_device_ids("1420569"), "Physics Test has been graded", "You recieved a 50/50")
+else:
+	from .Notify import Notify

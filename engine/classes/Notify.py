@@ -1,8 +1,6 @@
 from pyfcm import FCMNotification
 import os
 
-#AAAAX8IQmXA:APA91bHhTOyZ1GlivM2qwkSWpbFbCEo9FKjtIOzkmvp2HfWA5twXA3Ce3KeyiSfaZ_yINcmJA4rizDZTeFA6kZTlGuc3XdfODn1xDPn_hTi3NBwjv_6cSqq-GvccBN9P5Xynn1aprxZf
-
 class Notify:
 
 	def __init__(self):
@@ -45,10 +43,10 @@ class Notify:
 		:returns: list of device ids
 		"""
 		self.push_service.notify_multiple_devices(registration_ids=registration_ids, message_title=title, message_body=body)
-		print()
+
 
 if __name__ == "__main__":
 	registration_id = "fiRnqL7SI-Q:APA91bHosto4FalcAxd5Xw-AsfOHrS9X0k80quy7rkxpnRuteCi00R0I6_WBpP33bNg17HVaj0GrVfV1IOiaeH0OksE40EUYFAme_R7kUAknKEnorBFTdOlaUvhcmStE4gI7fupAbDzs"
 	notify = Notify()
-	#notify.send_notification([registration_id], "Hello World!", "Wassup my bro")
+	notify.send_notification([registration_id], "Hello World!", "Wassup my bro")
 	
