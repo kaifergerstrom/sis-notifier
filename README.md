@@ -1,2 +1,2 @@
 # sis-notifier
-app to notify of grade changes
+Dart app that will automatically link to any SIS student account, and notify their phone of grade updates/changes.
