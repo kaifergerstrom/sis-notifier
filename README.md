@@ -1,2 +1,2 @@
-# sis-notifier
-Dart app that will automatically link to any SIS student account, and notify their phone of grade updates/changes.
+# SIS Notifier
+An app that will enable notifications for the SIS 2.0 gradebook. *(Currently out of function due to summer/coronavirus)*.
